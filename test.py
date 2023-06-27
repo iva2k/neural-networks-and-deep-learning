@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
     Testing code for different neural network configurations.
     Adapted for Python 3.5.2
@@ -11,87 +13,120 @@
         4th param is learning rate (eta)
 
     Author:
+        iva2k, 2023
+        iva2k@yahoo.com
+
+    Credits:
         Michał Dobrzański, 2016
         dobrzanski.michal.daniel@gmail.com
 """
 
-# ----------------------
-# - read the input data:
-'''
+import time
+
+import numpy
+try:
+    from   theano import function, config, shared, sandbox
+    import theano.tensor as T
+except ImportError:
+    T = None
+
 import mnist_loader
-training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
-training_data = list(training_data)
-'''
-# ---------------------
-# - network.py example:
-#import network
+import network
+import network2
+if T is not None:
+    from   network3 import Network, ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer, ReLU, load_data_shared
+# softmax plus log-likelihood cost is more common in modern image classification networks.
 
-'''
-net = network.Network([784, 30, 10])
-net.SGD(training_data, 30, 10, 3.0, test_data=test_data)
-'''
+# pylint: disable=import-outside-toplevel
 
-# ----------------------
-# - network2.py example:
-#import network2
+def load_data():
+    '''read the input data
+    '''
+    training_data, validation_data, test_data = mnist_loader.load_data_wrapper()
+    # training_data, validation_data, test_data = load_data_shared()
+    training_data = list(training_data)
+    return training_data, validation_data, test_data
 
-'''
-net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
-#net.large_weight_initializer()
-net.SGD(training_data, 30, 10, 0.1, lmbda = 5.0,evaluation_data=validation_data,
-    monitor_evaluation_accuracy=True)
-'''
 
-# chapter 3 - Overfitting example - too many epochs of learning applied on small (1k samples) amount od data.
-# Overfitting is treating noise as a signal.
-'''
-net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
-net.large_weight_initializer()
-net.SGD(training_data[:1000], 400, 10, 0.5, evaluation_data=test_data,
-    monitor_evaluation_accuracy=True,
-    monitor_training_cost=True)
-'''
+def chapter1():
+    '''network.py example:
+    '''
+    print('CHAPTER 1')
+    training_data, validation_data, test_data = load_data()
+    net = network.Network([784, 30, 10])
+    net.SGD(training_data, 30, 10, 3.0, test_data=test_data)
 
-# chapter 3 - Regularization (weight decay) example 1 (only 1000 of training data and 30 hidden neurons)
-'''
-net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
-net.large_weight_initializer()
-net.SGD(training_data[:1000], 400, 10, 0.5,
-    evaluation_data=test_data,
-    lmbda = 0.1, # this is a regularization parameter
-    monitor_evaluation_cost=True,
-    monitor_evaluation_accuracy=True,
-    monitor_training_cost=True,
-    monitor_training_accuracy=True)
-'''
 
-# chapter 3 - Early stopping implemented
-'''
-net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
-net.SGD(training_data[:1000], 30, 10, 0.5,
-    lmbda=5.0,
-    evaluation_data=validation_data,
-    monitor_evaluation_accuracy=True,
-    monitor_training_cost=True,
-    early_stopping_n=10)
-'''
+def chapter2():
+    '''network2.py example
+    '''
+    print('CHAPTER 2')
+    training_data, validation_data, test_data = load_data()
+    net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
+    #net.large_weight_initializer()
+    net.SGD(training_data, 30, 10, 0.1, lmbda = 5.0,evaluation_data=validation_data,
+        monitor_evaluation_accuracy=True)
 
-# chapter 4 - The vanishing gradient problem - deep networks are hard to train with simple SGD algorithm
-# this network learns much slower than a shallow one.
-'''
-net = network2.Network([784, 30, 30, 30, 30, 10], cost=network2.CrossEntropyCost)
-net.SGD(training_data, 30, 10, 0.1,
-    lmbda=5.0,
-    evaluation_data=validation_data,
-    monitor_evaluation_accuracy=True)
-'''
+def chapter3():
+    ''' chapter 3 - Overfitting example - too many epochs of learning applied on small (1k samples) amount of data.
+    Overfitting is treating noise as a signal.
+    '''
+    print('CHAPTER 3')
+    training_data, validation_data, test_data = load_data()
+    net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
+    net.large_weight_initializer()
+    net.SGD(training_data[:1000], 400, 10, 0.5, evaluation_data=test_data,
+        monitor_evaluation_accuracy=True,
+        monitor_training_cost=True)
+
+def chapter3ex1():
+    '''chapter 3 - Regularization (weight decay) example 1 (only 1000 of training data and 30 hidden neurons)
+    '''
+    print('CHAPTER 3 EX 1')
+    training_data, validation_data, test_data = load_data()
+    net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
+    net.large_weight_initializer()
+    net.SGD(training_data[:1000], 400, 10, 0.5,
+        evaluation_data=test_data,
+        lmbda = 0.1, # this is a regularization parameter
+        monitor_evaluation_cost=True,
+        monitor_evaluation_accuracy=True,
+        monitor_training_cost=True,
+        monitor_training_accuracy=True)
+
+def chapter3ex2():
+    '''chapter 3 - Early stopping implemented
+    '''
+    print('CHAPTER 3 EX 2')
+    training_data, validation_data, test_data = load_data()
+    net = network2.Network([784, 30, 10], cost=network2.CrossEntropyCost)
+    net.SGD(training_data[:1000], 30, 10, 0.5,
+        lmbda=5.0,
+        evaluation_data=validation_data,
+        monitor_evaluation_accuracy=True,
+        monitor_training_cost=True,
+        early_stopping_n=10)
+
+
+def chapter4():
+    '''chapter 4 - The vanishing gradient problem - deep networks are hard to train with simple SGD algorithm
+    this network learns much slower than a shallow one.
+    '''
+    print('CHAPTER 4')
+    training_data, validation_data, test_data = load_data()
+    net = network2.Network([784, 30, 30, 30, 30, 10], cost=network2.CrossEntropyCost)
+    net.SGD(training_data, 30, 10, 0.1,
+        lmbda=5.0,
+        evaluation_data=validation_data,
+        monitor_evaluation_accuracy=True)
 
 
 # ----------------------
 # Theano and CUDA
 # ----------------------
 
-"""
+def test_theano():
+    """
     This deep network uses Theano with GPU acceleration support.
     I am using Ubuntu 16.04 with CUDA 7.5.
     Tutorial:
@@ -103,9 +138,6 @@ net.SGD(training_data, 30, 10, 0.1,
     The following command will update Theano and Numpy/Scipy (warning bellow):
         sudo pip install --upgrade theano
 
-"""
-
-"""
     Below, there is a testing function to check whether your computations have been made on CPU or GPU.
     If the result is 'Used the cpu' and you want to have it in gpu,     do the following:
     1) install theano:
@@ -121,14 +153,11 @@ net.SGD(training_data, 30, 10, 0.1,
         http://deeplearning.net/software/theano/tutorial/using_gpu.html
     4) Optionally, you can add cuDNN support from:
         https://developer.nvidia.com/cudnn
+    """
 
-
-"""
-def testTheano():
-    from theano import function, config, shared, sandbox
-    import theano.tensor as T
-    import numpy
-    import time
+    if T is None:
+        print('Failed importing Theano library.')
+        return
     print("Testing Theano library...")
     vlen = 10 * 30 * 768  # 10 x #cores x # threads per core
     iters = 1000
@@ -147,64 +176,90 @@ def testTheano():
         print('Used the cpu')
     else:
         print('Used the gpu')
-# Perform check:
-#testTheano()
 
+def chapter6():
+    '''chapter 6 - shallow architecture using just a single hidden layer, containing 100 hidden neurons.
+    '''
+    print('CHAPTER 6')
+    if T is None:
+        print('Failed importing Theano library.')
+        return
+    training_data, validation_data, test_data = load_data_shared()
+    mini_batch_size = 10
 
-# ----------------------
-# - network3.py example:
-import network3
-from network3 import Network, ConvPoolLayer, FullyConnectedLayer, SoftmaxLayer # softmax plus log-likelihood cost is more common in modern image classification networks.
+    net = Network([
+        FullyConnectedLayer(n_in=784, n_out=100),
+        SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
+    net.SGD(training_data, 60, mini_batch_size, 0.1, validation_data, test_data)
 
-# read data:
-training_data, validation_data, test_data = network3.load_data_shared()
-# mini-batch size:
-mini_batch_size = 10
+def chapter6ex1():
+    '''chapter 6 - 5x5 local receptive fields, 20 feature maps, max-pooling layer 2x2
+    '''
+    print('CHAPTER 6 EX 1')
+    if T is None:
+        print('Failed importing Theano library.')
+        return
+    training_data, validation_data, test_data = load_data_shared()
+    mini_batch_size = 10
+    net = Network([
+        ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
+                    filter_shape=(20, 1, 5, 5),
+                    poolsize=(2, 2)),
+        FullyConnectedLayer(n_in=20*12*12, n_out=100),
+        SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
+    net.SGD(training_data, 60, mini_batch_size, 0.1, validation_data, test_data)
 
-# chapter 6 - shallow architecture using just a single hidden layer, containing 100 hidden neurons.
-'''
-net = Network([
-    FullyConnectedLayer(n_in=784, n_out=100),
-    SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
-net.SGD(training_data, 60, mini_batch_size, 0.1, validation_data, test_data)
-'''
+def chapter6ex2():
+    ''' chapter 6 - inserting a second convolutional-pooling layer to the previous example => better accuracy
+    '''
+    print('CHAPTER 6 EX 2')
+    if T is None:
+        print('Failed importing Theano library.')
+        return
+    training_data, validation_data, test_data = load_data_shared()
+    mini_batch_size = 10
+    net = Network([
+        ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
+                    filter_shape=(20, 1, 5, 5),
+                    poolsize=(2, 2)),
+        ConvPoolLayer(image_shape=(mini_batch_size, 20, 12, 12),
+                    filter_shape=(40, 20, 5, 5),
+                    poolsize=(2, 2)),
+        FullyConnectedLayer(n_in=40*4*4, n_out=100),
+        SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
+    net.SGD(training_data, 60, mini_batch_size, 0.1, validation_data, test_data)
 
-# chapter 6 - 5x5 local receptive fields, 20 feature maps, max-pooling layer 2x2
-'''
-net = Network([
-    ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
-                  filter_shape=(20, 1, 5, 5),
-                  poolsize=(2, 2)),
-    FullyConnectedLayer(n_in=20*12*12, n_out=100),
-    SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
-net.SGD(training_data, 60, mini_batch_size, 0.1, validation_data, test_data)
-'''
+def chapter6ex3():
+    '''chapter 6 -  rectified linear units and some l2 regularization (lmbda=0.1) => even better accuracy
+    '''
+    print('CHAPTER 6 EX 3')
+    if T is None:
+        print('Failed importing Theano library.')
+        return
+    training_data, validation_data, test_data = load_data_shared()
+    mini_batch_size = 10
+    net = Network([
+        ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
+                    filter_shape=(20, 1, 5, 5),
+                    poolsize=(2, 2),
+                    activation_fn=ReLU),
+        ConvPoolLayer(image_shape=(mini_batch_size, 20, 12, 12),
+                    filter_shape=(40, 20, 5, 5),
+                    poolsize=(2, 2),
+                    activation_fn=ReLU),
+        FullyConnectedLayer(n_in=40*4*4, n_out=100, activation_fn=ReLU),
+        SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
+    net.SGD(training_data, 60, mini_batch_size, 0.03, validation_data, test_data, lmbda=0.1)
 
-# chapter 6 - inserting a second convolutional-pooling layer to the previous example => better accuracy
-'''
-net = Network([
-    ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
-                  filter_shape=(20, 1, 5, 5),
-                  poolsize=(2, 2)),
-    ConvPoolLayer(image_shape=(mini_batch_size, 20, 12, 12),
-                  filter_shape=(40, 20, 5, 5),
-                  poolsize=(2, 2)),
-    FullyConnectedLayer(n_in=40*4*4, n_out=100),
-    SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
-net.SGD(training_data, 60, mini_batch_size, 0.1, validation_data, test_data)
-'''
-
-# chapter 6 -  rectified linear units and some l2 regularization (lmbda=0.1) => even better accuracy
-from network3 import ReLU
-net = Network([
-    ConvPoolLayer(image_shape=(mini_batch_size, 1, 28, 28),
-                  filter_shape=(20, 1, 5, 5),
-                  poolsize=(2, 2),
-                  activation_fn=ReLU),
-    ConvPoolLayer(image_shape=(mini_batch_size, 20, 12, 12),
-                  filter_shape=(40, 20, 5, 5),
-                  poolsize=(2, 2),
-                  activation_fn=ReLU),
-    FullyConnectedLayer(n_in=40*4*4, n_out=100, activation_fn=ReLU),
-    SoftmaxLayer(n_in=100, n_out=10)], mini_batch_size)
-net.SGD(training_data, 60, mini_batch_size, 0.03, validation_data, test_data, lmbda=0.1)
+if __name__ == '__main__':
+    chapter1()
+    chapter2()
+    chapter3()
+    chapter3ex1()
+    chapter3ex2()
+    chapter4()
+    test_theano()
+    chapter6()
+    chapter6ex1()
+    chapter6ex2()
+    chapter6ex3()
